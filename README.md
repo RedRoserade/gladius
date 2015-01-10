@@ -53,5 +53,3 @@ main() {
 }
 ```
 
-## Features and bugs
-
