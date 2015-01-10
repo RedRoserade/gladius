@@ -1,6 +1,7 @@
 name: gladius
 version: 0.0.1
-description: A basic, middleware-based application that runs on top of a dart HttpServer. Heavily inspired by Express JS and OWIN.
+author: André Carvalho <afecarvalho@gmail.com>
+description: A basic, middleware-based application that runs on top of a dart HttpServer. Heavily inspired by Express and OWIN.
 dependencies:
   logging: any
 dev_dependencies:
