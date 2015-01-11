@@ -1,4 +1,4 @@
-part of owin;
+part of gladius;
 
 class Response implements IOSink {
 
@@ -86,8 +86,9 @@ class Response implements IOSink {
   }
 
   @override
-  Future flush() {
-    // TODO: implement flush
+  Future flush() async {
+    _res.add(_buffer);
+    _buffer.clear();
   }
 
   void reset() {

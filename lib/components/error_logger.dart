@@ -1,4 +1,4 @@
-part of owin;
+part of gladius;
 
 /// [Component] that logs errors
 /// and their stack trace onto the

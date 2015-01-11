@@ -1,4 +1,4 @@
-part of owin;
+part of gladius;
 
 /// An object-oriented way
 /// of implementing middleware
@@ -10,9 +10,7 @@ part of owin;
 /// with an instance of your
 /// derived class.
 abstract class Component {
-  AppFunc next;
-
   Component();
 
-  Future call(Context ctx);
+  Future call(Context ctx, AppFunc next);
 }

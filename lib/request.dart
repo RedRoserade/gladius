@@ -1,4 +1,4 @@
-part of owin;
+part of gladius;
 
 class Request {
   HttpRequest _req;

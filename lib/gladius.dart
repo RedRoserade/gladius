@@ -1,5 +1,5 @@
 
-library owin;
+library gladius;
 
 import 'dart:io';
 import 'dart:async';
@@ -14,7 +14,9 @@ part 'context.dart';
 part 'request.dart';
 part 'response.dart';
 part 'components/error_logger.dart';
+part 'src/http_app_impl.dart';
 
 typedef Future AppFunc(Context ctx);
+typedef Future Middleware(Context ctx, Future next(Context ctx));
 
-typedef AppFunc RequestDelegate(AppFunc next);
+
