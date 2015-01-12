@@ -2,6 +2,36 @@
 library owin.test;
 
 import '../lib/gladius.dart';
+import 'dart:async';
+
+var errorLogger = (Context ctx, Future next()) async {
+  try {
+    await next();
+  } catch (e, st) {
+    print(e);
+    print(st);
+  }
+};
+
+var logger = (Context ctx, Future next()) async {
+  var sw = new Stopwatch();
+  sw.start();
+
+  await next();
+
+  sw.stop();
+
+  print(sw.elapsedMilliseconds);
+};
+
+Middleware composer(Object o) {
+  print('composing... for $o');
+
+  return (Context ctx, Future next()) {
+    print('from composed stuff!! o is: $o');
+    return next();
+  };
+}
 
 main() async {
   var app = new HttpApp();
@@ -9,44 +39,23 @@ main() async {
   app.address = '0.0.0.0';
   app.port = 8080;
 
-  var router = new HttpRouter();
-
-  router.get('/awesome', (ctx, next) {
-    print('on totally awesome!!');
-    ctx.response.writeln('totally awesome!!!');
+  app.use((ctx, next) async {
+    ctx.response.writeln('inbound 1');
+    await next(ctx);
+    ctx.response.writeln('outbound 1');
   });
 
-  app.use(router);
-
-  app.use((ctx, next) {
-    ctx.response.writeln('hello, world');
-    app.use((ctx, next) {
-      ctx.response.write('yet again!!');
-      return next(ctx);
-    });
-    return next(ctx);
+  app.use((ctx, next) async {
+    ctx.response.writeln('inbound 2');
+    await next(ctx);
+    ctx.response.writeln('outbound 2');
   });
 
-  app.use((ctx, next) {
-    ctx.response.writeln('hello, world');
-    return next(ctx);
+  app.use((ctx, next) async {
+    ctx.response.writeln('inbound 3');
+    await next(ctx);
+    ctx.response.writeln('outbound 3');
   });
-
-
-//  app.useComponent(new ErrorLogger(writeToResponse: true));
-//
-//  var router = new HttpRouter();
-//
-//  router.get('/', (next) => (ctx) => print('/'));
-//
-//  router.get('/awesome', (next) => (ctx) async {
-//    ctx.response.write('GET /awesome');
-//    return next(ctx);
-//  });
-//
-//  router.get('/another/route', (next) => (ctx) => ctx.response.write('GET /another/route'));
-//
-//  app.useComponent(router);
 
   await app.start();
 }

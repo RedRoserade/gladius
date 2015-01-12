@@ -14,7 +14,6 @@ abstract class HttpApp {
     return new _HttpAppImpl();
   }
 
-
   void use(Middleware del);
 
   Future handleRequest(HttpRequest req);

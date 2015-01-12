@@ -3,14 +3,14 @@ part of gladius;
 Future _runPipeline(List<Middleware> middleware, Context ctx) async {
   var index = 0;
 
-  Future next(Context ctx) async {
+  Future next(Context ctx) {
     if (index < middleware.length) {
       var fn = middleware[index++];
       return fn(ctx, next);
     }
   };
 
-  await next(ctx);
+  return next(ctx);
 }
 
 class _HttpAppImpl implements HttpApp {

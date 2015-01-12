@@ -6,11 +6,11 @@ part of gladius;
 ///
 /// To use one of these,
 /// derive this class, and use
-/// [HttpApp.useComponent]
+/// [HttpApp.use]
 /// with an instance of your
 /// derived class.
 abstract class Component {
   Component();
 
-  Future call(Context ctx, AppFunc next);
+  Future call(Context ctx, Future next());
 }

@@ -16,7 +16,6 @@ part 'response.dart';
 part 'components/error_logger.dart';
 part 'src/http_app_impl.dart';
 
-typedef Future AppFunc(Context ctx);
-typedef Future Middleware(Context ctx, Future next(Context ctx));
+typedef Future Middleware(Context ctx, Future next());
 
 

@@ -35,14 +35,14 @@ class HttpRouter extends Component {
   }
 
   @override
-  Future call(Context ctx, AppFunc next) async {
+  Future call(Context ctx, Future next()) async {
     var routes = _methods[ctx.request.method];
 
     if (routes == null) {
       ctx.response.statusCode = 404;
       ctx.response.write('Cannot ${ctx.request.method} ${ctx.request.path}');
 
-      return next(ctx);
+      return next();
     }
 
     var middleware = routes[ctx.request.path];
@@ -51,7 +51,7 @@ class HttpRouter extends Component {
       ctx.response.statusCode = 404;
       ctx.response.write('Cannot ${ctx.request.method} ${ctx.request.path}');
 
-      return next(ctx);
+      return next();
     }
 
     await _runPipeline(middleware, ctx);
