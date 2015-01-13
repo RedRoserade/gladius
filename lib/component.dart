@@ -10,7 +10,5 @@ part of gladius;
 /// with an instance of your
 /// derived class.
 abstract class Component {
-  Component();
-
   Future call(Context ctx, Future next());
 }

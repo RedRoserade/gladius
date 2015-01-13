@@ -17,9 +17,9 @@ class ErrorLogger extends Component {
   ErrorLogger({this.writeToResponse: true});
 
   @override
-  Future call(Context ctx) async {
+  Future call(Context ctx, Future next()) async {
     try {
-      await next(ctx);
+      await next();
     } catch (e, stackTrace) {
       if (writeToResponse) {
         ctx.response.reset();
@@ -38,7 +38,7 @@ class ErrorLogger extends Component {
 
         ctx.response.writeln('</pre>');
       } else {
-        await next(ctx);
+        await next();
       }
 
       ctx.app.logger.severe('Error', e, stackTrace);

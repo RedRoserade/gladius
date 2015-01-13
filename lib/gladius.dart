@@ -15,7 +15,10 @@ part 'request.dart';
 part 'response.dart';
 part 'components/error_logger.dart';
 part 'src/http_app_impl.dart';
+part 'src/helpers.dart';
 
-typedef Future Middleware(Context ctx, Future next());
+/// Defines a function that runs in an http application pipeline.
+/// [next] can be called to run the next component in the pipeline.
+typedef Future AppFunc(Context ctx, Future next());
 
 

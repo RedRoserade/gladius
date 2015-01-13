@@ -24,10 +24,10 @@ var logger = (Context ctx, Future next()) async {
   print(sw.elapsedMilliseconds);
 };
 
-Middleware composer(Object o) {
+AppFunc composer(Object o) {
   print('composing... for $o');
 
-  return (Context ctx, Future next()) {
+  return (Context ctx, next) {
     print('from composed stuff!! o is: $o');
     return next();
   };
@@ -39,23 +39,29 @@ main() async {
   app.address = '0.0.0.0';
   app.port = 8080;
 
-  app.use((ctx, next) async {
-    ctx.response.writeln('inbound 1');
-    await next(ctx);
-    ctx.response.writeln('outbound 1');
-  });
+  app.use(errorLogger);
 
-  app.use((ctx, next) async {
-    ctx.response.writeln('inbound 2');
-    await next(ctx);
-    ctx.response.writeln('outbound 2');
-  });
+  var r1 = new HttpRouter();
 
-  app.use((ctx, next) async {
-    ctx.response.writeln('inbound 3');
-    await next(ctx);
-    ctx.response.writeln('outbound 3');
-  });
+  r1.get('/', (ctx, next) => ctx.response.writeln('r1 says /'));
+
+  r1.get('/hello', (ctx, next) => ctx.response.writeln('r1 says /hello'));
+
+  r1.get('/r2/hello', (ctx, next) => ctx.response.writeln('r1 says /r2/hello'));
+
+  var r2 = new HttpRouter();
+
+  r2.get('/', (ctx, next) => ctx.response.writeln('r2 says /'));
+
+  r2.get('/hello', (ctx, next) => ctx.response.writeln('r2 says /hello'));
+
+  r1.mount('/r2', r2);
+
+  app.use(r1);
+
+  app.use((ctx, next) => ctx.response.writeln('I will run after the router!!'));
 
   await app.start();
+
+  print('Started on http://${app.address}:${app.port}');
 }

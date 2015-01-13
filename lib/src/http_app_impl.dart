@@ -1,31 +1,30 @@
 part of gladius;
 
-Future _runPipeline(List<Middleware> middleware, Context ctx) async {
+Future _runPipeline(List<AppFunc> middleware, Context ctx) async {
   var index = 0;
 
-  Future next(Context ctx) {
+  Future next() {
     if (index < middleware.length) {
       var fn = middleware[index++];
       return fn(ctx, next);
     }
   };
 
-  return next(ctx);
+  return next();
 }
 
 class _HttpAppImpl implements HttpApp {
 
-  List<Middleware> middleware = <Middleware>[];
+  List<AppFunc> pipeline = <AppFunc>[];
 
   String address;
-  int port;
 
-  int _currentIndex = 0;
+  int port;
 
   Logger logger = new Logger('app');
 
-  void use(Middleware del) {
-    middleware.add(del);
+  void use(AppFunc del) {
+    pipeline.add(del);
   }
 
   Future handleRequest(HttpRequest req) async {
@@ -33,8 +32,8 @@ class _HttpAppImpl implements HttpApp {
     context.app = this;
 
     try {
-      if (middleware.isNotEmpty) {
-        await _runPipeline(middleware, context);
+      if (pipeline.isNotEmpty) {
+        await _runPipeline(pipeline, context);
       } else {
         throw new EmptyPipelineException();
       }
@@ -45,13 +44,16 @@ class _HttpAppImpl implements HttpApp {
         ..reset()
         ..statusCode = emptyPipeline ? 501 : 500
         ..write(emptyPipeline ? e : '500 Internal Server Error');
+
+      print(e);
+      print(st);
     }
 
-    await context.response.send();
+    await context.response.close();
   }
 
   Future start() async {
-    HttpServer server = await HttpServer.bind(address, port);
+    var server = await HttpServer.bind(address, port);
 
     server.listen(handleRequest);
 

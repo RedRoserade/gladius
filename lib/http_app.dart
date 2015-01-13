@@ -2,9 +2,6 @@ part of gladius;
 
 
 abstract class HttpApp {
-
-  List<Middleware> middleware;
-
   String address;
   int port;
 
@@ -14,7 +11,7 @@ abstract class HttpApp {
     return new _HttpAppImpl();
   }
 
-  void use(Middleware del);
+  void use(AppFunc func);
 
   Future handleRequest(HttpRequest req);
 

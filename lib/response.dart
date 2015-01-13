@@ -42,16 +42,6 @@ class Response implements IOSink {
 
   @override
   Future close() async {
-
-  }
-
-  /// Sends this response to
-  /// the client.
-  ///
-  /// From this point onward,
-  /// data cannot be added, and headers
-  /// cannot be removed.
-  Future send() async {
     if (!writeDirectly) {
       _res.add(_buffer);
     }
@@ -64,11 +54,9 @@ class Response implements IOSink {
     // TODO: implement addError
   }
 
-  // TODO: implement done
   @override
   Future get done => _res.done;
 
-  // TODO: implement encoding
   @override
   Encoding get encoding => _res.encoding;
 

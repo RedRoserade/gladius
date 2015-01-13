@@ -3,9 +3,7 @@ part of gladius;
 class Request {
   HttpRequest _req;
 
-  Request.fromRequest(this._req) {
-
-  }
+  Request.fromRequest(this._req);
 
   Stream get body => _req;
   HttpHeaders get headers => _req.headers;
