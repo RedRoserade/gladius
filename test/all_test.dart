@@ -21,10 +21,10 @@ var logger = (Context ctx, Future next()) async {
 
   sw.stop();
 
-  print(sw.elapsedMilliseconds);
+  print('${ctx.request.method} ${ctx.request.uri.path} - ${ctx.response.statusCode}, ${sw.elapsedMilliseconds}ms');
 };
 
-AppFunc composer(Object o) {
+AppFunc compose(Object o) {
   print('composing... for $o');
 
   return (Context ctx, next) {
@@ -39,15 +39,25 @@ main() async {
   app.address = '0.0.0.0';
   app.port = 8080;
 
+  app.use(logger);
+
   app.use(errorLogger);
 
+  _mountRouters(app);
+
+  await app.start();
+
+  print('Started on http://${app.address}:${app.port}');
+}
+
+void _mountRouters(HttpApp app) {
   var r1 = new HttpRouter();
 
   r1.get('/', (ctx, next) => ctx.response.writeln('r1 says /'));
 
   r1.get('/hello', (ctx, next) => ctx.response.writeln('r1 says /hello'));
 
-  r1.get('/r2/hello', (ctx, next) => ctx.response.writeln('r1 says /r2/hello'));
+  //r1.get('/r2/hello', (ctx, next) => ctx.response.writeln('r1 says /r2/hello'));
 
   var r2 = new HttpRouter();
 
@@ -59,9 +69,5 @@ main() async {
 
   app.use(r1);
 
-  app.use((ctx, next) => ctx.response.writeln('I will run after the router!!'));
-
-  await app.start();
-
-  print('Started on http://${app.address}:${app.port}');
+  r1.use((ctx, next) => ctx.response.writeln('I will run before r1\'s contents, but not r2\'s.'));
 }

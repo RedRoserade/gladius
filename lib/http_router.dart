@@ -1,6 +1,16 @@
 part of gladius;
 
-class HttpRouter extends Component {
+class WeightedRoute {
+  /// The route.
+  String route;
+
+  /// The priority. Lower number means higher priority.
+  int priority;
+
+  WeightedRoute(this.route, this.priority);
+}
+
+class HttpRouter extends Component with Pipeline {
 
   Map<String, Map<String, List<AppFunc>>> _methods = {};
 
@@ -16,6 +26,9 @@ class HttpRouter extends Component {
   }
 
   void mount(String path, HttpRouter router) {
+
+    if (path == '/') { throw new StateError('Bad path: Mounting at "$path" is not allowed.'); }
+
     _subRouters[path] = router;
     router.basePath = path;
   }
@@ -53,29 +66,74 @@ class HttpRouter extends Component {
     on('OPTIONS', route, func);
   }
 
-  HttpRouter _getSubRouter(Map<String, HttpRouter> subRouters, String path) {
-    var key = subRouters.keys.firstWhere((k) => path.contains(k), orElse: () => null);
+  /// Returns the closest-matching child router
+  /// for the specified [uri], or `null` if no
+  /// suitable match is found.
+  ///
+  /// Example:
+  ///
+  /// Consider you have `r1` mounted at `/r1`
+  /// and `r1a` mounted at `/r1/a`.
+  ///
+  /// If `[uri.path] == '/r1/a/somethingelse'`, `r1a`
+  /// will be returned, as its mount path matches the
+  /// requested path better than `r1`'s mount path.
+  ///
+  /// If, however, `[uri.path]` == '/r1/hello', `r1`
+  /// would be returned.
+  HttpRouter getChild(Uri uri) {
+    var uriPath = uri.path;
 
-    if (key == null) { return null; }
+    var closestRoute = null as WeightedRoute;
 
-    return subRouters[key];
+    _subRouters.keys
+        .where((mountPath) => uriPath.contains(mountPath))
+        .map((mountPath) => new WeightedRoute(mountPath, uriPath.replaceFirst(mountPath, '').length))
+        .forEach((route) {
+          if (closestRoute == null) {
+            closestRoute = route;
+          } else if (closestRoute.priority > route.priority) {
+            closestRoute = route;
+          }
+        });
+
+    if (closestRoute == null) { return null; }
+
+    return _subRouters[closestRoute.route];
+
+//    var uriPath = uri.path;
+//
+//    var weightedRoutes = _subRouters.keys
+//        .where((path) => uriPath.contains(path))
+//        .map((path) => new WeightedRoute(path, uriPath.replaceFirst(path, '').length))
+//        .toList() as List<WeightedRoute>;
+//
+//    weightedRoutes.sort((p1, p2) => p1.priority - p2.priority);
+//
+//    return _subRouters[
+//      weightedRoutes
+//        .map((r) => r.route)
+//        .firstWhere((_) => true, orElse: () => null)
+//    ];
   }
 
-  @override
-  Future call(Context ctx, Future next()) async {
+  @override Future call(Context ctx, Future next()) async {
+
     var routes = _methods[ctx.request.method];
-    var subRouter = _getSubRouter(_subRouters, ctx.request.path);
+    var path = ctx.request.uri.path;
+
+    var subRouter = getChild(ctx.request.uri);
 
     if (routes == null || routes.isEmpty) {
       if (subRouter != null) { return subRouter(ctx, next); }
 
       ctx.response.statusCode = 404;
-      ctx.response.write('Cannot ${ctx.request.method} ${ctx.request.path}');
+      ctx.response.write('Cannot ${ctx.request.method} ${path}');
 
       return next();
     }
 
-    var route = _addTrailingSlash(ctx.request.path);
+    var route = _addTrailingSlash(path);
 
     if (basePath.isNotEmpty) {
       route = route.substring(basePath.length);
@@ -89,13 +147,16 @@ class HttpRouter extends Component {
       }
 
       ctx.response.statusCode = 404;
-      ctx.response.write('Cannot ${ctx.request.method} ${ctx.request.path}');
+      ctx.response.write('Cannot ${ctx.request.method} ${path}');
 
       return next();
     }
 
+    await _runPipeline(functions, ctx);
     await _runPipeline(middleware, ctx);
 
     return next();
   }
+
+  String toString() => 'Router mounted at $basePath';
 }
