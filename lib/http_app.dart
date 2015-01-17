@@ -1,6 +1,11 @@
 part of gladius;
 
+typedef Service ServiceInjector();
+
 class HttpApp extends Object with Pipeline {
+
+  Map<String, ServiceInjector> _services = {};
+
   String address;
   int port;
 
@@ -35,5 +40,17 @@ class HttpApp extends Object with Pipeline {
     server.listen(handleRequest);
 
     logger.info('Started on $address:$port');
+  }
+
+  void inject(String key, ServiceInjector injector) {
+    _services[key] = injector;
+  }
+
+  Service getService(String key) {
+    var s = _services[key];
+
+    if (s == null) { return null; }
+
+    return s();
   }
 }

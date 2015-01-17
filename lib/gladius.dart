@@ -17,6 +17,7 @@ part 'components/error_logger.dart';
 part 'src/helpers.dart';
 part 'src/exceptions.dart';
 part 'pipeline.dart';
+part 'service.dart';
 
 /// Defines a function that runs in an http application pipeline.
 /// [next] can be called to run the next component in the pipeline.
