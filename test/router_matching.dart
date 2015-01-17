@@ -1,16 +1,8 @@
-
-import '../lib/gladius.dart';
 import 'package:unittest/unittest.dart';
+import '../lib/gladius.dart';
 
 main() {
-  group('route matching', () {
-
-    test('throws StateError if mounting child router at root path', () {
-      var router = new HttpRouter();
-      expect(() => router.mount('/', new HttpRouter()), throwsStateError);
-    });
-
-
+  group('child router matching', () {
     test('returns router if one was mounted in that exact path', () {
       var router = new HttpRouter();
       var c1 = new HttpRouter();
@@ -20,10 +12,10 @@ main() {
 
       router.mount('/c2', c2);
 
-      expect(router.getChild(new Uri(path: '/c2')), equals(c2));
+      expect(router.getChild('/c2'), equals(c2));
     });
 
-    test('returns closest matching router', () {
+    test('returns closest matching router if multiple are available', () {
       var router = new HttpRouter();
       var c2 = new HttpRouter();
       router.mount('/c2', c2);
@@ -32,7 +24,12 @@ main() {
 
       router.mount('/c2/a', c2a);
 
-      expect(router.getChild(new Uri(path: '/c2/a')), equals(c2a));
+      var c2b = new HttpRouter();
+
+      router.mount('/c2/b', c2b);
+
+      expect(router.getChild('/c2/a/b'), equals(c2a));
+
     });
 
     test('returns null if no children routers are suitable', () {
@@ -44,7 +41,8 @@ main() {
 
       router.mount('/c2/a', c2a);
 
-      expect(router.getChild(new Uri(path: '/c3/')), isNull);
+      expect(router.getChild('/c3'), isNull);
+      expect(router.getChild('/c2ab'), isNull);
     });
   });
 }

@@ -18,20 +18,27 @@ class HttpRouter extends Component with Pipeline {
 
   String basePath;
 
-  HttpRouter({this.basePath: ''});
+  HttpRouter({ this.basePath: '' });
 
-  bool _matches(String route, String template) {
-    var routeSegments = (basePath + route).split('/');
+  bool _matches(Uri route, String template) {
+    var routeSegments = route.pathSegments;
     var templateSegments = template.split('/');
   }
 
-  void mount(String path, HttpRouter router) {
+  void mount(String path, HttpRouter router, { bool replaceExisting: false }) {
 
-    if (path == '/') { throw new StateError('Bad path: Mounting at "$path" is not allowed.'); }
+    if (path == '/') { throw new StateError('Mounting at / is not allowed.'); }
+
+    if (_subRouters[path] != null && !replaceExisting) {
+      throw new StateError('A router is already mounted at $path and replaceExisting is false.');
+    }
 
     _subRouters[path] = router;
     router.basePath = path;
   }
+
+  HttpRouter unmount(String path) =>
+      _subRouters.remove(path);
 
   void on(String method, Pattern route, AppFunc func) {
     _methods.putIfAbsent(method, () => {});
@@ -46,83 +53,96 @@ class HttpRouter extends Component with Pipeline {
     on('GET', route, func);
   }
 
-  void put(Pattern route, AppFunc func) {
-    on('PUT', route, func);
+  void head(Pattern route, AppFunc func) {
+    on('HEAD', route, func);
   }
 
   void post(Pattern route, AppFunc func) {
     on('POST', route, func);
   }
 
+  void put(Pattern route, AppFunc func) {
+    on('PUT', route, func);
+  }
+
   void delete(Pattern route, AppFunc func) {
     on('DELETE', route, func);
   }
 
-  void patch(Pattern route, AppFunc func) {
-    on('PATCH', route, func);
+  void trace(Pattern route, AppFunc func) {
+    on('TRACE', route, func);
   }
 
   void options(Pattern route, AppFunc func) {
     on('OPTIONS', route, func);
   }
 
+  void patch(Pattern route, AppFunc func) {
+    on('PATCH', route, func);
+  }
+
   /// Returns the closest-matching child router
   /// for the specified [uri], or `null` if no
   /// suitable match is found.
+  ///
+  /// The matching is done in a similar way to
+  /// route matching in a TCP/IP layer 3 router, with
+  /// longest prefix matching.
   ///
   /// Example:
   ///
   /// Consider you have `r1` mounted at `/r1`
   /// and `r1a` mounted at `/r1/a`.
   ///
-  /// If `[uri.path] == '/r1/a/somethingelse'`, `r1a`
+  /// If `[uri.path] == '/r1/a/hello'`, `r1a`
   /// will be returned, as its mount path matches the
   /// requested path better than `r1`'s mount path.
   ///
   /// If, however, `[uri.path]` == '/r1/hello', `r1`
   /// would be returned.
-  HttpRouter getChild(Uri uri) {
-    var uriPath = uri.path;
-
+  HttpRouter getChild(String path) {
+    // TODO Investigate speed. This is at least O(n) complexity.
     var closestRoute = null as WeightedRoute;
 
-    _subRouters.keys
-        .where((mountPath) => uriPath.contains(mountPath))
-        .map((mountPath) => new WeightedRoute(mountPath, uriPath.replaceFirst(mountPath, '').length))
-        .forEach((route) {
-          if (closestRoute == null) {
-            closestRoute = route;
-          } else if (closestRoute.priority > route.priority) {
-            closestRoute = route;
-          }
-        });
+    path = _addTrailingSlash(path);
+
+    var elligiblePaths = _subRouters.keys
+        .map(_addTrailingSlash)
+        .where((p) => path.contains(p));
+
+    for (var mountPath in elligiblePaths) {
+      var priority = path.replaceFirst(mountPath, '').length;
+
+      if (closestRoute == null || closestRoute.priority > priority) {
+        closestRoute = new WeightedRoute(_removeTrailingSlash(mountPath), priority);
+      }
+
+      if (priority == 0) { break; }
+    }
+
+//    _subRouters.keys
+//        .where((mountPath) => path.contains(mountPath))
+//        .map((mountPath) => new WeightedRoute(mountPath, path.replaceFirst(mountPath, '').length))
+//        .forEach((route) {
+//          if (closestRoute == null) {
+//            closestRoute = route;
+//          } else if (closestRoute.priority > route.priority) {
+//            closestRoute = route;
+//          }
+//        });
 
     if (closestRoute == null) { return null; }
 
     return _subRouters[closestRoute.route];
-
-//    var uriPath = uri.path;
-//
-//    var weightedRoutes = _subRouters.keys
-//        .where((path) => uriPath.contains(path))
-//        .map((path) => new WeightedRoute(path, uriPath.replaceFirst(path, '').length))
-//        .toList() as List<WeightedRoute>;
-//
-//    weightedRoutes.sort((p1, p2) => p1.priority - p2.priority);
-//
-//    return _subRouters[
-//      weightedRoutes
-//        .map((r) => r.route)
-//        .firstWhere((_) => true, orElse: () => null)
-//    ];
   }
 
-  @override Future call(Context ctx, Future next()) async {
+  @override
+  Future call(Context ctx, Future next()) async {
 
     var routes = _methods[ctx.request.method];
     var path = ctx.request.uri.path;
 
-    var subRouter = getChild(ctx.request.uri);
+    var subRouter = getChild(path);
 
     if (routes == null || routes.isEmpty) {
       if (subRouter != null) { return subRouter(ctx, next); }
